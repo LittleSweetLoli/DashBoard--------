@@ -35,6 +35,7 @@ function prepareFareData(data) {
     fareCounts['Unknown'] = unknownCount;
     return Object.entries(fareCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key + '-' + (+key + 49), 'value': value }));
 }
+
 function prepareSurvivalByAge(data) {
     const ageCounts = {};
     const ageRanges = [0, 10, 20, 30, 40, 50, 60, 70, 80];

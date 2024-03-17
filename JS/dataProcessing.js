@@ -1,3 +1,4 @@
+import { prepareAgeData, prepareFareData, prepareClassData, prepareGenderData, prepareEmbarkationData, prepareSurvivalByAge, prepareSurvivalByAttribute, prepareSurvivalByGender } from './dataPreparation.js';
 import { drawHistogram, drawLineChart } from './chartUtils.js';
 
 export function createTable(data) {
