@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Дэшборд</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+    <h1>CSV Дэшборд</h1>
+    <input type="file" id="csvFile" accept=".csv" />
+    <button id="showTableButton">Показать/Скрыть таблицу</button>
+    <button id="showChartsButton">Показать/Скрыть гистограммы</button>
+    <button id="showSurvivalChartsButton">Показать графики выживания</button>
+    <div id="tableContainer"></div>
+    <div id="chartContainer"></div>
+
+    <script>
+        const inputElement = document.getElementById('csvFile');
+        const showTableButton = document.getElementById('showTableButton');
+        const showChartsButton = document.getElementById('showChartsButton');
+        const showSurvivalChartsButton = document.getElementById('showSurvivalChartsButton');
+        const tableContainer = document.getElementById('tableContainer');
+        const chartContainer = document.getElementById('chartContainer');
+
+        let csvData = [];
+
+        inputElement.addEventListener('change', handleFileSelect, false);
+        showTableButton.addEventListener('click', toggleTable, false);
+        showChartsButton.addEventListener('click', toggleCharts, false);
+        showSurvivalChartsButton.addEventListener('click', showSurvivalCharts, false);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                complete: function(results) {
+                    csvData = results.data;
+                }
+            });
+        }
+
+        function toggleTable() {
+            if (tableContainer.children.length === 0 || tableContainer.style.display === 'none') {
+                createTable(csvData);
+            }
+            tableContainer.style.display = tableContainer.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleCharts() {
+            if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
+                createCharts(csvData, chartContainer);
+            }
+            chartContainer.style.display = chartContainer.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function showSurvivalCharts() {
+            if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
+                createSurvivalCharts(csvData, chartContainer);
+            }
+            chartContainer.style.display = chartContainer.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function createTable(data) {
+            const table = d3.select(tableContainer)
+                .append('table')
+                .attr('class', 'table');
+
+            const thead = table.append('thead');
+            const tbody = table.append('tbody');
+
+            const headerRow = thead.append('tr');
+
+            Object.keys(data[0]).forEach(key => {
+                headerRow.append('th').text(key);
+            });
+
+            data.forEach(row => {
+                const dataRow = tbody.append('tr');
+                Object.values(row).forEach(value => {
+                    dataRow.append('td').text(value);
+                });
+            });
+        }
+
+        function createCharts(data, container) {
+            d3.select(container).selectAll('.chart').remove();
+
+            const ageData = prepareAgeData(data);
+            const fareData = prepareFareData(data);
+            const classData = prepareClassData(data);
+            const genderData = prepareGenderData(data);
+            const embarkationData = prepareEmbarkationData(data);
+
+            drawHistogram(ageData, 'Возраст', 'Количество людей', container);
+            drawHistogram(fareData, 'Цена билета', 'Купленные билеты', container);
+            drawHistogram(classData, 'Класс', 'Количество людей', container);
+            drawHistogram(genderData, 'Пол', 'Количество', container);
+            drawHistogram(embarkationData, 'Порт посадки', 'Количество', container);
+        }
+
+        function prepareAgeData(data) {
+            const ageCounts = {};
+            let unknownCount = 0;
+            data.forEach(row => {
+                if (row['Age']) {
+                    const ageRange = Math.floor(row['Age'] / 10) * 10;
+                    if (ageCounts[ageRange]) {
+                        ageCounts[ageRange]++;
+                    } else {
+                        ageCounts[ageRange] = 1;
+                    }
+                } else {
+                    unknownCount++;
+                }
+            });
+            ageCounts['Unknown'] = unknownCount;
+            return Object.entries(ageCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key + '-' + (+key + 9), 'value': value }));
+        }
+
+        function prepareFareData(data) {
+            const fareCounts = {};
+            let unknownCount = 0;
+            data.forEach(row => {
+                if (row['Fare']) {
+                    const fareRange = Math.floor(row['Fare'] / 50) * 50;
+                    if (fareCounts[fareRange]) {
+                        fareCounts[fareRange]++;
+                    } else {
+                        fareCounts[fareRange] = 1;
+                    }
+                } else {
+                    unknownCount++;
+                }
+            });
+            fareCounts['Unknown'] = unknownCount;
+            return Object.entries(fareCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key + '-' + (+key + 49), 'value': value }));
+        }
+
+        function prepareClassData(data) {
+            const classCounts = {};
+            let unknownCount = 0;
+            data.forEach(row => {
+                if (row['Pclass']) {
+                    const passengerClass = row['Pclass'];
+                    if (classCounts[passengerClass]) {
+                        classCounts[passengerClass]++;
+                    } else {
+                        classCounts[passengerClass] = 1;
+                    }
+                } else {
+                    unknownCount++;
+                }
+            });
+            classCounts['Unknown'] = unknownCount;
+            return Object.entries(classCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key, 'value': value }));
+        }
+
+        function prepareGenderData(data) {
+            const genderCounts = { 'male': 0, 'female': 0, 'Unknown': 0 };
+            data.forEach(row => {
+                const gender = row['Sex'];
+                if (gender) {
+                    genderCounts[gender]++;
+                } else {
+                    genderCounts['Unknown']++;
+                }
+            });
+            return Object.entries(genderCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key, 'value': value }));
+        }
+
+        function prepareEmbarkationData(data) {
+            const embarkationCounts = { 'S': 0, 'C': 0, 'Q': 0, 'Unknown': 0 };
+            data.forEach(row => {
+                const embarkationPort = row['Embarked'];
+                if (embarkationPort) {
+                    embarkationCounts[embarkationPort]++;
+                } else {
+                    embarkationCounts['Unknown']++;
+                }
+            });
+            return Object.entries(embarkationCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key, 'value': value }));
+        }
+
+        function drawHistogram(data, xAxisLabel, yAxisLabel, container) {
+            const chartContainer = d3.select(container)
+                .append('div')
+                .attr('class', 'chart');
+
+            const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+            const width = 400 - margin.left - margin.right;
+            const height = 200 - margin.top - margin.bottom;
+
+            const x = d3.scaleBand()
+                .rangeRound([0, width])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .rangeRound([height, 0]);
+
+            const xAxis = d3.axisBottom(x);
+            const yAxis = d3.axisLeft(y);
+
+            const chart = chartContainer
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+            x.domain(data.map(d => d.label));
+            y.domain([0, d3.max(data, d => d.value)]);
+
+            chart.append('g')
+                .attr('class', 'x axis')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(xAxis)
+                .append('text')
+                .attr('x', width / 2)
+                .attr('y', margin.bottom)
+                .attr('fill', '#000')
+                .text(xAxisLabel);
+
+            chart.append('g')
+                .attr('class', 'y axis')
+                .call(yAxis)
+                .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 50 - height / 2)
+                .attr('dy', '.71em')
+                .attr('fill', '#000')
+                .text(yAxisLabel);
+
+            chart.selectAll('.bar')
+                .data(data)
+                .enter().append('rect')
+                .attr('class', 'bar')
+                .attr('x', d => x(d.label))
+                .attr('y', d => y(d.value))
+                .attr('width', x.bandwidth())
+                .attr('height', d => height - y(d.value));
+        }
+
+        function prepareSurvivalByAttribute(data, attribute) {
+            const survivalCounts = {};
+            const attributeValues = [...new Set(data.map(row => row[attribute]))];
+            attributeValues.forEach(value => {
+                const filteredData = data.filter(row => row[attribute] === value);
+                const survivedCount = filteredData.filter(row => row['Survived'] === 1).length;
+                survivalCounts[value] = survivedCount;
+            });
+            return Object.entries(survivalCounts).map(([key, value]) => ({ 'label': key, 'value': value }));
+        }
+
+        function prepareSurvivalByAge(data) {
+            const ageCounts = {};
+            const ageRanges = [0, 10, 20, 30, 40, 50, 60, 70, 80];
+            ageRanges.forEach((range, index) => {
+                const filteredData = data.filter(row => {
+                    const age = row['Age'];
+                    if (age >= range && age < ageRanges[index + 1]) {
+                        return true;
+                    }
+                    return false;
+                });
+                const survivedCount = filteredData.filter(row => row['Survived'] === 1).length;
+                ageCounts[`${range}-${ageRanges[index + 1]}`] = survivedCount;
+            });
+            return Object.entries(ageCounts).map(([key, value]) => ({ 'label': key, 'value': value }));
+        }
+
+        function prepareSurvivalByGender(data) {
+            const genderCounts = {};
+            const genders = ['male', 'female'];
+            genders.forEach(gender => {
+                const filteredData = data.filter(row => row['Sex'] === gender);
+                const survivedCount = filteredData.filter(row => row['Survived'] === 1).length;
+                genderCounts[gender] = survivedCount;
+            });
+            return Object.entries(genderCounts).map(([key, value]) => ({ 'label': key, 'value': value }));
+        }
+
+        function createSurvivalCharts(data, container) {
+            const survivalData = [];
+
+            const ageSurvival = prepareSurvivalByAge(data);
+            survivalData.push({ 'data': ageSurvival, 'xAxisLabel': 'Возрастные диапазоны', 'yAxisLabel': 'Выжившие' });
+
+            const classSurvival = prepareSurvivalByAttribute(data, 'Pclass');
+            survivalData.push({ 'data': classSurvival, 'xAxisLabel': 'Класс', 'yAxisLabel': 'Выжившие' });
+
+            const genderSurvival = prepareSurvivalByGender(data);
+            survivalData.push({ 'data': genderSurvival, 'xAxisLabel': 'Пол', 'yAxisLabel': 'Выжившие' });
+
+            d3.select(container).selectAll('.chart').remove();
+
+            survivalData.forEach(survival => {
+                drawLineChart(survival.data, survival.xAxisLabel, survival.yAxisLabel, container);
+            });
+        }
+
+        function drawLineChart(data, xAxisLabel, yAxisLabel, container) {
+            const margin = { top: 20, right: 20, bottom: 30, left: 40 };
+            const width = 400 - margin.left - margin.right;
+            const height = 200 - margin.top - margin.bottom;
+
+            const x = d3.scaleBand()
+                .rangeRound([0, width])
+                .padding(0.1);
+
+            const y = d3.scaleLinear()
+                .rangeRound([height, 0]);
+
+            const xAxis = d3.axisBottom(x);
+            const yAxis = d3.axisLeft(y);
+
+            const line = d3.line()
+                .x(d => x(d.label))
+                .y(d => y(d.value));
+
+            const svg = d3.select(container)
+                .append('div')
+                .attr('class', 'chart')
+                .append('svg')
+                .attr('width', width + margin.left + margin.right)
+                .attr('height', height + margin.top + margin.bottom)
+                .append('g')
+                .attr('transform', 'translate(' + margin.left + ',' + margin.top + ')');
+
+            x.domain(data.map(d => d.label));
+            y.domain([0, d3.max(data, d => d.value)]);
+
+            svg.append('g')
+                .attr('class', 'x axis')
+                .attr('transform', 'translate(0,' + height + ')')
+                .call(xAxis)
+                .append('text')
+                .attr('x', width / 2)
+                .attr('y', margin.bottom)
+                .attr('fill', '#000')
+                .text(xAxisLabel);
+
+            svg.append('g')
+                .attr('class', 'y axis')
+                .call(yAxis)
+                .append('text')
+                .attr('transform', 'rotate(-90)')
+                .attr('y', 0 - margin.left)
+                .attr('x', 50 - height / 2)
+                .attr('dy', '.71em')
+                .attr('fill', '#000')
+                .text(yAxisLabel);
+
+            svg.append('path')
+                .datum(data)
+                .attr('fill', 'none')
+                .attr('stroke', 'steelblue')
+                .attr('stroke-width', 1.5)
+                .attr('d', line);
+        }
+    </script>
+</body>
+</html>

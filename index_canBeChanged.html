@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Дэшборд</title>
+    <script src="https://d3js.org/d3.v6.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+</head>
+<body>
+    <h1>CSV Дэшборд</h1>
+    <input type="file" id="csvFile" accept=".csv" />
+    <button id="showTableButton">Показать/Скрыть таблицу</button>
+    <button id="showChartsButton">Показать/Скрыть гистограммы</button>
+    <button id="showSurvivalChartsButton">Показать графики выживания</button>
+    <div id="tableContainer"></div>
+    <div id="chartContainer"></div>
+
+    <script>
+        const inputElement = document.getElementById('csvFile');
+        const showTableButton = document.getElementById('showTableButton');
+        const showChartsButton = document.getElementById('showChartsButton');
+        const showSurvivalChartsButton = document.getElementById('showSurvivalChartsButton');
+        const tableContainer = document.getElementById('tableContainer');
+        const chartContainer = document.getElementById('chartContainer');
+
+        let csvData = [];
+
+        inputElement.addEventListener('change', handleFileSelect, false);
+        showTableButton.addEventListener('click', toggleTable, false);
+        showChartsButton.addEventListener('click', toggleCharts, false);
+        showSurvivalChartsButton.addEventListener('click', showSurvivalCharts, false);
+
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
+            Papa.parse(file, {
+                header: true,
+                dynamicTyping: true,
+                complete: function(results) {
+                    csvData = results.data;
+                }
+            });
+        }
+
+        function toggleTable() {
+            if (tableContainer.children.length === 0 || tableContainer.style.display === 'none') {
+                createTable(csvData);
+            }
+            tableContainer.style.display = tableContainer.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function toggleCharts() {
+            if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
+                createCharts(csvData, chartContainer);
+            }
+            chartContainer.style.display = chartContainer.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function showSurvivalCharts() {
+            if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
+                createSurvivalCharts(csvData, chartContainer);
+            }
+            chartContainer.style.display = chartContainer.style.display === 'none' ? 'block' : 'none';
+        }
+
+        
+        function prepareClassData(data) {
+            const classCounts = {};
+            let unknownCount = 0;
+            data.forEach(row => {
+                if (row['Pclass']) {
+                    const passengerClass = row['Pclass'];
+                    if (classCounts[passengerClass]) {
+                        classCounts[passengerClass]++;
+                    } else {
+                        classCounts[passengerClass] = 1;
+                    }
+                } else {
+                    unknownCount++;
+                }
+            });
+            classCounts['Unknown'] = unknownCount;
+            return Object.entries(classCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key, 'value': value }));
+        }
+
+        function prepareGenderData(data) {
+            const genderCounts = { 'male': 0, 'female': 0, 'Unknown': 0 };
+            data.forEach(row => {
+                const gender = row['Sex'];
+                if (gender) {
+                    genderCounts[gender]++;
+                } else {
+                    genderCounts['Unknown']++;
+                }
+            });
+            return Object.entries(genderCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key, 'value': value }));
+        }
+
+        function prepareEmbarkationData(data) {
+            const embarkationCounts = { 'S': 0, 'C': 0, 'Q': 0, 'Unknown': 0 };
+            data.forEach(row => {
+                const embarkationPort = row['Embarked'];
+                if (embarkationPort) {
+                    embarkationCounts[embarkationPort]++;
+                } else {
+                    embarkationCounts['Unknown']++;
+                }
+            });
+            return Object.entries(embarkationCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key, 'value': value }));
+        }
+
+        
+
+        function prepareSurvivalByAttribute(data, attribute) {
+            const survivalCounts = {};
+            const attributeValues = [...new Set(data.map(row => row[attribute]))];
+            attributeValues.forEach(value => {
+                const filteredData = data.filter(row => row[attribute] === value);
+                const survivedCount = filteredData.filter(row => row['Survived'] === 1).length;
+                survivalCounts[value] = survivedCount;
+            });
+            return Object.entries(survivalCounts).map(([key, value]) => ({ 'label': key, 'value': value }));
+        }
+
+        
+
+        
+
+        
+    </script>
+</body>
+</html>
