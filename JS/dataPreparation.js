@@ -54,15 +54,17 @@ export function prepareSurvivalByAge(data) {
 }
 
 export function prepareSurvivalByGender(data) {
-    const genderCounts = {};
-    const genders = ['male', 'female'];
-    genders.forEach(gender => {
-        const filteredData = data.filter(row => row['Sex'] === gender);
-        const survivedCount = filteredData.filter(row => row['Survived'] === 1).length;
-        genderCounts[gender] = survivedCount;
+    const genderCounts = { 'male': 0, 'female': 0 };
+    data.forEach(row => {
+        const gender = row['Sex'];
+        if (gender && (gender === 'male' || gender === 'female')) {
+            const survivedCount = row['Survived'] === 1 ? 1 : 0;
+            genderCounts[gender] += survivedCount;
+        }
     });
     return Object.entries(genderCounts).map(([key, value]) => ({ 'label': key, 'value': value }));
 }
+
 
 export function prepareClassData(data) {
     const classCounts = {};

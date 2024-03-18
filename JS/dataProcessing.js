@@ -57,3 +57,8 @@ export function createSurvivalCharts(data, container) {
         drawLineChart(survival.data, survival.xAxisLabel, survival.yAxisLabel, container);
     });
 }
+
+export function createGenderSurvivalChart(data, container) {
+    const genderSurvivalData = prepareSurvivalByGender(data);
+    drawHistogram(genderSurvivalData, 'Пол', 'Выжившие', container);
+}

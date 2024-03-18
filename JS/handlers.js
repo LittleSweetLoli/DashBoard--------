@@ -1,4 +1,4 @@
-import { createTable, createCharts, createSurvivalCharts } from './dataProcessing.js';
+import { createTable, createCharts, createSurvivalCharts, createGenderSurvivalChart} from './dataProcessing.js';
 
 let csvData = [];
 
@@ -33,6 +33,14 @@ export function showSurvivalCharts() {
     const chartContainer = document.getElementById('chartContainer');
     if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
         createSurvivalCharts(csvData, chartContainer);
+    }
+    chartContainer.style.display = chartContainer.style.display === 'none' ? 'block' : 'none';
+}
+
+export function createGenderSurvivalChart() {
+    const chartContainer = document.getElementById('chartContainer');
+    if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
+        createGenderSurvivalChart(csvData, chartContainer);
     }
     chartContainer.style.display = chartContainer.style.display === 'none' ? 'block' : 'none';
 }
