@@ -119,3 +119,83 @@ export function prepareSurvivalByAttribute(data, attribute) {
     });
     return Object.entries(survivalCounts).map(([key, value]) => ({ 'label': key, 'value': value }));
 }
+
+//----------------------
+
+export function prepareSurvivalStatistics(data, attribute, gender) {
+    const survivalCounts = {};
+    const attributeValues = [...new Set(data.map(row => row[attribute]))];
+
+    attributeValues.forEach(value => {
+        const filteredData = data.filter(row => row[attribute] === value && row['Sex'] === gender);
+        const survivedCount = filteredData.filter(row => row['Survived'] === 1).length;
+        survivalCounts[value] = survivedCount;
+    });
+
+    const statistics = [];
+    Object.entries(survivalCounts).forEach(([key, value]) => {
+        statistics.push({ 'label': key, 'value': value });
+    });
+
+    return statistics;
+}
+
+export function prepareSurvivalStatsByAge(data, gender) {
+    const ageCounts = {};
+    const ageRanges = [0, 10, 20, 30, 40, 50, 60, 70, 80];
+    ageRanges.forEach((range, index) => {
+        const filteredData = data.filter(row => {
+            const age = row['Age'];
+            const rowGender = row['Sex'];
+            if (age >= range && age < ageRanges[index + 1] && rowGender === gender) {
+                return true;
+            }
+            return false;
+        });
+        const survivedCount = filteredData.filter(row => row['Survived'] === 1).length;
+        ageCounts[`${range}-${ageRanges[index + 1]}`] = survivedCount;
+    });
+    return Object.entries(ageCounts).map(([key, value]) => ({ 'label': key, 'value': value }));
+}
+export function prepareSurvivalStatsByFare(data, gender) {
+    const fareCounts = {};
+    let unknownCount = 0;
+    data.forEach(row => {
+        const rowGender = row['Sex'];
+        if (row['Fare'] && rowGender === gender && row['Survived'] === 1) {
+            const fareRange = Math.floor(row['Fare'] / 50) * 50;
+            if (fareCounts[fareRange]) {
+                fareCounts[fareRange]++;
+            } else {
+                fareCounts[fareRange] = 1;
+            }
+        } else {
+            unknownCount = 0;
+        }
+    });
+    fareCounts['Unknown'] = unknownCount;
+    return Object.entries(fareCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key + '-' + (+key + 49), 'value': value }));
+}
+
+export function prepareSurvivalStatsByClass(data, gender) {
+    const classCounts = {};
+    let unknownCount = 0;
+    data.forEach(row => {
+        const rowGender = row['Sex'];
+        if (row['Survived'] === 1){
+            if (row['Pclass'] && rowGender === gender) {
+                const passengerClass = row['Pclass'];
+                if (classCounts[passengerClass]) {
+                    classCounts[passengerClass]++;
+                } else {
+                    classCounts[passengerClass] = 1;
+                }
+            }
+        } 
+        // } else {
+        //     unknownCount = 0;
+        // }
+    });
+    classCounts['Unknown'] = unknownCount;
+    return Object.entries(classCounts).map(([key, value]) => ({ 'label': key === 'Unknown' ? 'Unknown' : key, 'value': value }));
+}

@@ -1,4 +1,18 @@
-import { prepareAgeData, prepareFareData, prepareClassData, prepareGenderData, prepareEmbarkationData, prepareSurvivalByAge, prepareSurvivalByAttribute, prepareSurvivalByGender } from './dataPreparation.js';
+import { 
+    prepareAgeData, 
+    prepareFareData, 
+    prepareClassData, 
+    prepareGenderData, 
+    prepareEmbarkationData, 
+    prepareSurvivalByAge, 
+    prepareSurvivalByAttribute, 
+    prepareSurvivalByGender,
+    prepareSurvivalStatistics,
+    prepareSurvivalStatsByAge,
+    prepareSurvivalStatsByFare,
+    prepareSurvivalStatsByClass
+} from './dataPreparation.js';
+
 import { drawHistogram, drawLineChart } from './chartUtils.js';
 
 export function createTable(data) {
@@ -42,6 +56,9 @@ export function createCharts(data, container) {
 export function createSurvivalCharts(data, container) {
     const survivalData = [];
 
+    const Survival = prepareSurvivalByAttribute(data, 'Pclass');
+    survivalData.push({ 'data': classSurvival, 'xAxisLabel': 'Класс', 'yAxisLabel': 'Выжившие' });
+
     const ageSurvival = prepareSurvivalByAge(data);
     survivalData.push({ 'data': ageSurvival, 'xAxisLabel': 'Возрастные диапазоны', 'yAxisLabel': 'Выжившие' });
 
@@ -55,5 +72,32 @@ export function createSurvivalCharts(data, container) {
 
     survivalData.forEach(survival => {
         drawLineChart(survival.data, survival.xAxisLabel, survival.yAxisLabel, container);
+    });
+}
+
+export function displaySurvivalStatistics(data, container, gender) {
+    const survivalData = [];
+    
+    const MaleSurvival = prepareSurvivalStatistics(data, 'Sex', gender);
+    survivalData.push({ 'data': MaleSurvival, 'xAxisLabel': 'Пол', 'yAxisLabel': 'Выжившие' });
+
+    const embarkationData = prepareSurvivalStatistics(data, 'Embarked', gender);
+    survivalData.push({ 'data': embarkationData, 'xAxisLabel': 'Порт посадки', 'yAxisLabel': 'Выжившие' });
+
+    const ageSurvival = prepareSurvivalStatsByAge(data, gender);
+    survivalData.push({ 'data': ageSurvival, 'xAxisLabel': 'Возраст', 'yAxisLabel': 'Выжившие' });
+
+    const FareSurvival = prepareSurvivalStatsByFare(data, gender);
+    survivalData.push({ 'data': FareSurvival, 'xAxisLabel': 'Цена билета', 'yAxisLabel': 'Выжившие' });
+    
+    const classSurvival = prepareSurvivalStatsByClass(data, gender);
+    survivalData.push({ 'data': classSurvival, 'xAxisLabel': 'Класс', 'yAxisLabel': 'Выжившие' });
+
+
+    // Очистка содержимого контейнера перед отрисовкой новой гистограммы
+    d3.select(container).selectAll('*').remove();
+
+    survivalData.forEach(survival => {
+        drawHistogram(survival.data, survival.xAxisLabel, survival.yAxisLabel, container);
     });
 }
