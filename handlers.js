@@ -1,4 +1,4 @@
-import { createTable, createCharts, createSurvivalCharts, createGenderSurvivalChart} from './dataProcessing.js';
+import { createTable, createCharts, createSurvivalCharts } from './dataProcessing.js';
 
 let csvData = [];
 
@@ -14,7 +14,7 @@ export function handleFileSelect(event) {
 }
 
 export function toggleTable() {
-    const tableContainer = document.getElementById('tableContainer');
+    //const tableContainer = document.getElementById('tableContainer');
     if (tableContainer.children.length === 0 || tableContainer.style.display === 'none') {
         createTable(csvData);
     }
@@ -22,7 +22,7 @@ export function toggleTable() {
 }
 
 export function toggleCharts() {
-    const chartContainer = document.getElementById('chartContainer');
+    //const chartContainer = document.getElementById('chartContainer');
     if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
         createCharts(csvData, chartContainer);
     }
@@ -30,17 +30,9 @@ export function toggleCharts() {
 }
 
 export function showSurvivalCharts() {
-    const chartContainer = document.getElementById('chartContainer');
+    //const chartContainer = document.getElementById('chartContainer');
     if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
         createSurvivalCharts(csvData, chartContainer);
-    }
-    chartContainer.style.display = chartContainer.style.display === 'none' ? 'block' : 'none';
-}
-
-export function createGenderSurvivalChart() {
-    const chartContainer = document.getElementById('chartContainer');
-    if (chartContainer.children.length === 0 || chartContainer.style.display === 'none') {
-        createGenderSurvivalChart(csvData, chartContainer);
     }
     chartContainer.style.display = chartContainer.style.display === 'none' ? 'block' : 'none';
 }
